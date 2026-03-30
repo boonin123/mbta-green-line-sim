@@ -83,10 +83,12 @@ class Train:
         stations: dict[str, "SimulatedStation"],
         breakdown_rates: dict,
         day_type: str = "weekday",
+        route_override: list[str] | None = None,
     ):
         self.train_id = train_id
         self.branch = branch
         self.direction = direction
+        self._route_override = route_override  # optional truncated route
         self.start_time = start_time
         self.network = network
         self.stations = stations
@@ -116,7 +118,7 @@ class Train:
         """SimPy generator process. Yield from env.process(train.run(env))."""
         from sim.passenger import current_time_block
 
-        route = self.network.get_route(self.branch, self.direction)
+        route = self._route_override or self.network.get_route(self.branch, self.direction)
         if not route:
             return
 

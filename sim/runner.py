@@ -30,13 +30,11 @@ CLI usage
 
 from __future__ import annotations
 
-import json
 import os
 import random
 import statistics
 import time
 from dataclasses import dataclass, field
-from typing import Any
 
 import simpy
 
@@ -47,7 +45,7 @@ from sim.passenger import (
     seed_initial_passengers,
 )
 from sim.station import SimulatedStation
-from sim.train import Train, load_breakdown_rates, train_dispatcher
+from sim.train import Train, load_breakdown_rates
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
 
@@ -87,6 +85,8 @@ class SimConfig:
     start_time  : simulation start as "HH:MM" string or seconds since midnight
     duration_min: simulation window in minutes
     seed        : random seed (None = non-deterministic)
+    end_station_id : parent station ID to truncate route (e.g. "place-kencl").
+                     None = run full branch to terminus.
     """
     branches: list[str] = field(default_factory=lambda: ["Green-D"])
     directions: list[int] = field(default_factory=lambda: [1])
@@ -94,6 +94,7 @@ class SimConfig:
     start_time: str | float = "07:00"
     duration_min: float = 120.0
     seed: int | None = None
+    end_station_id: str | None = None
 
     @property
     def start_seconds(self) -> float:
@@ -268,6 +269,14 @@ def single_run(config: SimConfig) -> RunResult:
         """Wrapper that collects Train objects spawned by train_dispatcher."""
         from sim.passenger import current_time_block
 
+        # Build route (truncated if end_station_id is set)
+        full_route = network.get_route(branch, direction)
+        if config.end_station_id and config.end_station_id in full_route:
+            end_idx = full_route.index(config.end_station_id)
+            route = full_route[: end_idx + 1]
+        else:
+            route = full_route
+
         train_counter = 0
         while env.now < config.end_seconds:
             time_block = current_time_block(env.now)
@@ -288,6 +297,7 @@ def single_run(config: SimConfig) -> RunResult:
                 stations=stations,
                 breakdown_rates=breakdown_rates,
                 day_type=config.day_type,
+                route_override=route if config.end_station_id else None,
             )
             all_trains.append(train)
             env.process(train.run(env))
@@ -355,6 +365,7 @@ def batch_run(config: SimConfig, n_runs: int, verbose: bool = True) -> BatchResu
             start_time=config.start_time,
             duration_min=config.duration_min,
             seed=config.seed + i if config.seed is not None else None,
+            end_station_id=config.end_station_id,
         )
         result = single_run(run_config)
         summaries.append(result.summary())
@@ -413,6 +424,8 @@ if __name__ == "__main__":
     parser.add_argument("--duration", type=float, default=120.0, help="Minutes")
     parser.add_argument("--runs", type=int, default=100)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--end-station", default=None,
+                        help="Parent station ID to stop at (e.g. place-kencl for Kenmore)")
     args = parser.parse_args()
 
     cfg = SimConfig(
@@ -422,6 +435,7 @@ if __name__ == "__main__":
         start_time=args.start_time,
         duration_min=args.duration,
         seed=args.seed,
+        end_station_id=args.end_station,
     )
 
     if args.mode == "single":
