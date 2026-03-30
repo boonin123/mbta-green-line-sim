@@ -1,3 +1,13 @@
+---
+title: MBTA Green Line Simulation
+emoji: 🚃
+colorFrom: green
+colorTo: blue
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # MBTA Green Line Simulation
 
 A discrete-event simulation of the MBTA Green Line — the most delay-prone transit line in Boston — built with **SimPy** and visualised through an interactive **Dash** dashboard.
