@@ -1,0 +1,35 @@
+{
+  "Green-B": {
+    "prob_per_trip": 0.04,
+    "delay_dist": "lognormal",
+    "delay_mu": 5.3,
+    "delay_sigma": 0.8,
+    "delay_mean_sec": 320,
+    "notes": "Highest breakdown rate \u2014 longest surface route, shared road, older overhead wire infrastructure."
+  },
+  "Green-C": {
+    "prob_per_trip": 0.03,
+    "delay_dist": "lognormal",
+    "delay_mu": 5.1,
+    "delay_sigma": 0.75,
+    "delay_mean_sec": 280,
+    "notes": "Surface route, shorter than B branch."
+  },
+  "Green-D": {
+    "prob_per_trip": 0.015,
+    "delay_dist": "lognormal",
+    "delay_mu": 4.8,
+    "delay_sigma": 0.7,
+    "delay_mean_sec": 180,
+    "notes": "Grade-separated, lowest breakdown rate. Mostly vehicle failures."
+  },
+  "Green-E": {
+    "prob_per_trip": 0.025,
+    "delay_dist": "lognormal",
+    "delay_mu": 5.0,
+    "delay_sigma": 0.75,
+    "delay_mean_sec": 220,
+    "notes": "Mixed surface/underground. E branch has had frequent signal issues."
+  },
+  "source": "MBTA FY2023 Performance Dashboard (on-time rate ~72% systemwide for Green Line). Branch-level breakdown probabilities are estimates scaled from systemwide rate."
+}
