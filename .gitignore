@@ -12,3 +12,5 @@ build/
 htmlcov/
 data/gtfs/*.txt
 data/gtfs/*.zip
+.vscode/
+.Rhistory

@@ -704,28 +704,16 @@
     "lat": 42.379467,
     "lon": -71.086625,
     "branches": [
-      "Green-B",
-      "Green-C",
       "Green-E"
     ],
     "is_surface": false,
     "stop_ids": {
-      "Green-B": {
-        "outbound": "70514",
-        "inbound": "70513"
-      },
-      "Green-C": {
-        "outbound": "70514",
-        "inbound": "70513"
-      },
       "Green-E": {
         "outbound": "70514",
         "inbound": "70513"
       }
     },
     "stop_sequence": {
-      "Green-B": 27,
-      "Green-C": 24,
       "Green-E": 20
     }
   },
@@ -735,28 +723,16 @@
     "lat": 42.387928,
     "lon": -71.096766,
     "branches": [
-      "Green-B",
-      "Green-C",
       "Green-E"
     ],
     "is_surface": false,
     "stop_ids": {
-      "Green-B": {
-        "outbound": "70506",
-        "inbound": "70505"
-      },
-      "Green-C": {
-        "outbound": "70506",
-        "inbound": "70505"
-      },
       "Green-E": {
         "outbound": "70506",
         "inbound": "70505"
       }
     },
     "stop_sequence": {
-      "Green-B": 28,
-      "Green-C": 25,
       "Green-E": 21
     }
   },
@@ -766,28 +742,16 @@
     "lat": 42.393682,
     "lon": -71.106388,
     "branches": [
-      "Green-B",
-      "Green-C",
       "Green-E"
     ],
     "is_surface": false,
     "stop_ids": {
-      "Green-B": {
-        "outbound": "70508",
-        "inbound": "70507"
-      },
-      "Green-C": {
-        "outbound": "70508",
-        "inbound": "70507"
-      },
       "Green-E": {
         "outbound": "70508",
         "inbound": "70507"
       }
     },
     "stop_sequence": {
-      "Green-B": 29,
-      "Green-C": 26,
       "Green-E": 22
     }
   },
@@ -797,28 +761,16 @@
     "lat": 42.399889,
     "lon": -71.111003,
     "branches": [
-      "Green-B",
-      "Green-C",
       "Green-E"
     ],
     "is_surface": true,
     "stop_ids": {
-      "Green-B": {
-        "outbound": "70510",
-        "inbound": "70509"
-      },
-      "Green-C": {
-        "outbound": "70510",
-        "inbound": "70509"
-      },
       "Green-E": {
         "outbound": "70510",
         "inbound": "70509"
       }
     },
     "stop_sequence": {
-      "Green-B": 30,
-      "Green-C": 27,
       "Green-E": 23
     }
   },
@@ -828,28 +780,16 @@
     "lat": 42.407975,
     "lon": -71.117044,
     "branches": [
-      "Green-B",
-      "Green-C",
       "Green-E"
     ],
     "is_surface": false,
     "stop_ids": {
-      "Green-B": {
-        "outbound": "70512",
-        "inbound": "70511"
-      },
-      "Green-C": {
-        "outbound": "70512",
-        "inbound": "70511"
-      },
       "Green-E": {
         "outbound": "70512",
         "inbound": "70511"
       }
     },
     "stop_sequence": {
-      "Green-B": 31,
-      "Green-C": 28,
       "Green-E": 24
     }
   },
@@ -1353,18 +1293,13 @@
     "lat": 42.377359,
     "lon": -71.094761,
     "branches": [
-      "Green-D",
-      "Green-E"
+      "Green-D"
     ],
     "is_surface": true,
     "stop_ids": {
       "Green-D": {
         "outbound": "70504",
         "inbound": "70503"
-      },
-      "Green-E": {
-        "outbound": "70504",
-        "inbound": ""
       }
     },
     "stop_sequence": {

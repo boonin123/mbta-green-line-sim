@@ -233,21 +233,57 @@ Google Maps shows ~68 min for full D branch → sim p50 adds ~4-10 min of realis
 **Known remaining issue:**
 - `total_overflow` in station metrics double-counts passengers who miss multiple consecutive trains (a passenger stranded across N trains appears N times). Tracked for Phase 3 fix.
 
-### Phase 3: Analysis Layer (next)
-- [ ] Implement `analysis/metrics.py` — delay, travel time, bunching stats richer than runner summary
-- [ ] Unit tests for sim components (`tests/`)
-- [ ] Fix overflow metric to track unique stranded passengers
-- [ ] Extend to full Green Line (add B, C, E branches + merge Resource logic at Kenmore/Copley)
+### Phase 3: Analysis Layer ✅ COMPLETE
+- [x] Implement `analysis/metrics.py` — delay, travel time, bunching stats richer than runner summary
+- [x] Unit tests for sim components (`tests/`) — 95 tests, all passing
+- [x] Fix overflow metric to track unique stranded passengers
+- [x] Extend to full Green Line (add B, C, E branches + merge Resource logic at Kenmore/Copley)
 
-### Phase 4: Dash Dashboard
-- [ ] `dashboard/app.py` — app scaffold, layout router
-- [ ] `dashboard/batch_view.py` — batch I/O charts and stats
-- [ ] `dashboard/map_view.py` — single-run animated map
+**Multi-branch calibration (all 4 branches inbound, weekday AM peak, 20 runs):**
 
-### Phase 5: Polish
+| Scenario | Mean trip | p90 | Worst | Breakdowns/run |
+|----------|-----------|-----|-------|----------------|
+| B+C+D single run | 88.7 min | 93.3 min | — | 17 |
+| All 4 branches batch (20 runs) | 82.0 min | 97.8 min | 117.1 min | 25.4 |
+
+**Multi-branch observations:**
+- Both merge Resources created: `place-kencl` (Kenmore, B/C/D) and `place-coecl` (Copley, E)
+- Trunk headway of ~3.3 min with 3 branches merging (MBTA target: 2–3 min) ✓
+- Headway CV = 0.315 at midpoint station — merge contention is causing detectable irregularity ✓
+- Throughput: 25k passengers boarded, 5k stranded in 2-hour B+C+D window
+- `breakdown_scale = 0.5` yields ~25 breakdowns/run across 4 branches (≈6/branch); slightly high vs. single-branch calibration (~3/run); acceptable for multi-branch analysis
+
+**Note:** B+C branches add surface-running segments — expect longer trip times (88+ min) vs. D-only (~78 min AM peak).
+
+### Phase 4: Dash Dashboard ✅ COMPLETE
+- [x] `dashboard/app.py` — app scaffold with navbar + layout router; `register_callbacks` pattern to avoid circular imports with Dash 4
+- [x] `dashboard/batch_view.py` — batch I/O charts: duration histogram, delay CDF, bunching bar chart, top-10 station boardings/wait-time dual axis, per-run results table, 4 summary stat cards
+- [x] `dashboard/map_view.py` — single-run animated map: Plotly scatter_mapbox with OpenStreetMap tiles (no API key), per-frame train marker, visited/upcoming station colours, status bar (current stop / next stop / ETA / crowding), play/pause/reset controls, scrollable stop timeline, trip summary card
+
+**Dashboard notes:**
+- 8 callbacks registered: 1 batch run, 6 map playback, 1 router
+- Playback: `dcc.Interval` at 800ms/frame drives frame index store → map + status updates
+- `uirevision="map"` preserves user zoom/pan across frame updates
+- Run: `python dashboard/app.py` → http://localhost:8050
+
+### Phase 5: Dashboard Polish ✅ COMPLETE
+- [x] Landing page (`landing_view.py`) — animated hero, real GL schematic coloured by branch, stats bar, feature cards
+- [x] End-of-ride stats modal — your time vs p50/p90, percentile rank, crowding badge; driven by 30 background comparison runs
+- [x] Batch progress bar — `dcc.Interval` polling at 300 ms, progress label, disabled button during run
+- [x] Departure time selection — sim back-calculates start time from terminus so trains always arrive at or after chosen departure
+- [x] Random seed per run — each "Simulate Ride" click uses a new seed
+- [x] Smooth animation — interpolated "moving" frames at 33%/67% between stops
+
+### Phase 6: Hosting & Documentation ✅ COMPLETE
+- [x] `render.yaml` — Render.com deployment config; `gunicorn` added to `requirements.txt`
+- [x] `README.md` — full rewrite with live demo link, 6 screenshot embeds, setup/CLI/hosting docs
+- [x] `docs/screenshots/` — automated Playwright screenshots (landing, batch ×2, map ×3)
+- [x] `docs/take_screenshots.py` — headless screenshot script for future re-capture
+
+### Phase 7: Future Work
 - [ ] Special event injection (passenger surge via SimConfig)
 - [ ] Weather factor (surface segment variance multiplier)
-- [ ] GLX branches (Union Square, Medford/Tufts — already in GTFS data)
+- [ ] Multi-train trips with transfer support
 
 ---
 

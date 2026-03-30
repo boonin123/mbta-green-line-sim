@@ -158,8 +158,8 @@ class RunResult:
             "total_boarded": sum(
                 m["total_boarded"] for m in self.station_metrics
             ),
-            "total_overflow": sum(
-                m["total_overflow"] for m in self.station_metrics
+            "total_stranded": sum(
+                m["total_stranded"] for m in self.station_metrics
             ),
         }
 
@@ -181,7 +181,7 @@ class BatchResult:
         td_maxes = _collect("trip_duration_max_sec")
         td_mins = _collect("trip_duration_min_sec")
         breakdowns = _collect("total_breakdowns")
-        overflows = _collect("total_overflow")
+        overflows = _collect("total_stranded")
 
         return {
             "n_runs": self.n_runs,
@@ -375,11 +375,17 @@ def single_run(config: SimConfig) -> RunResult:
 # Batch run
 # ---------------------------------------------------------------------------
 
-def batch_run(config: SimConfig, n_runs: int, verbose: bool = True) -> BatchResult:
+def batch_run(config: SimConfig, n_runs: int, verbose: bool = True,
+              progress_fn=None) -> BatchResult:
     """
     Run N independent simulations and aggregate results.
 
     Each run uses a different random seed derived from the base config seed.
+
+    Parameters
+    ----------
+    progress_fn : callable(completed: int, total: int) | None
+        Optional callback invoked after every run. Useful for progress bars.
     """
     wall_start = time.perf_counter()
     summaries = []
@@ -398,6 +404,9 @@ def batch_run(config: SimConfig, n_runs: int, verbose: bool = True) -> BatchResu
         )
         result = single_run(run_config)
         summaries.append(result.summary())
+
+        if progress_fn is not None:
+            progress_fn(i + 1, n_runs)
 
         if verbose and (i + 1) % max(1, n_runs // 10) == 0:
             print(f"  Completed {i + 1}/{n_runs} runs...")
@@ -487,7 +496,7 @@ if __name__ == "__main__":
                   f"min={s['trip_duration_min_sec']/60:.1f}min "
                   f"max={s['trip_duration_max_sec']/60:.1f}min")
         print(f"  Breakdowns: {s['total_breakdowns']}")
-        print(f"  Boarded: {s['total_boarded']} | Overflow: {s['total_overflow']}")
+        print(f"  Boarded: {s['total_boarded']} | Overflow: {s['total_stranded']}")
         print(f"  Wall time: {result.wall_time_sec:.2f}s")
 
     else:

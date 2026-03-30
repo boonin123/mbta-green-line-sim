@@ -85,12 +85,14 @@ class SimulatedStation:
         self.waiting_passengers: int = 0
 
         # Metrics accumulated over the run
-        self.total_arrived: int = 0       # passengers who arrived at this platform
-        self.total_boarded: int = 0       # passengers who boarded a train
-        self.total_alighted: int = 0      # passengers who alighted here
-        self.total_overflow: int = 0      # passengers who couldn't board (full train)
-        self.wait_times: list[float] = []  # per-passenger wait time (seconds)
-        self._arrival_times: list[float] = []  # timestamps for wait time computation
+        self.total_arrived: int = 0           # passengers who arrived at this platform
+        self.total_boarded: int = 0           # passengers who successfully boarded a train
+        self.total_alighted: int = 0          # passengers who alighted here
+        self.total_missed_boardings: int = 0  # cumulative per-train-stop misses
+                                              # (a passenger stranded across N trains counts N times;
+                                              # useful for dwell pressure analysis but not headcount)
+        self.wait_times: list[float] = []     # per-passenger wait time (seconds) for boarded pax
+        self._arrival_times: list[float] = [] # timestamps for wait time computation
 
     # ------------------------------------------------------------------
     # Passenger arrival (called by passenger.py arrival process)
@@ -164,7 +166,7 @@ class SimulatedStation:
 
         self.waiting_passengers -= boarded
         self.total_boarded += boarded
-        self.total_overflow += overflow
+        self.total_missed_boardings += overflow  # cumulative; see note above
 
         # --- Dwell time ---
         base_dwell = network.sample_dwell(self.is_surface, time_block)
@@ -194,20 +196,28 @@ class SimulatedStation:
             return None
         return sum(self.wait_times) / len(self.wait_times)
 
+    def total_stranded(self) -> int:
+        """Unique passengers still on platform at end of run (never boarded)."""
+        return self.waiting_passengers
+
+    def board_rate(self) -> float:
+        """Fraction of arrived passengers who successfully boarded."""
+        if self.total_arrived == 0:
+            return 1.0
+        return self.total_boarded / self.total_arrived
+
     def to_metrics_dict(self) -> dict:
+        stranded = self.total_stranded()
         return {
             "station_id": self.id,
             "station_name": self.name,
             "total_arrived": self.total_arrived,
             "total_boarded": self.total_boarded,
             "total_alighted": self.total_alighted,
-            "total_overflow": self.total_overflow,
-            "overflow_rate": (
-                self.total_overflow / self.total_arrived
-                if self.total_arrived > 0 else 0.0
-            ),
+            "total_stranded": stranded,              # unique passengers, never boarded
+            "total_missed_boardings": self.total_missed_boardings,  # cumulative per-stop misses
+            "board_rate": self.board_rate(),
             "mean_wait_sec": self.mean_wait_time(),
-            "passengers_stranded": self.waiting_passengers,  # end-of-run
         }
 
     def __repr__(self):

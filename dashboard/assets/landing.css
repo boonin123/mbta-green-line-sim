@@ -1,0 +1,10 @@
+@keyframes trainBounce {
+    0%, 100% { transform: translateX(0); }
+    25%  { transform: translateX(10px); }
+    75%  { transform: translateX(-10px); }
+}
+
+.train-bounce {
+    display: inline-block;
+    animation: trainBounce 1.4s ease-in-out infinite;
+}
