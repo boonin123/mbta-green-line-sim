@@ -199,36 +199,48 @@ Output:
 
 ## Implementation Phases
 
-### Phase 1: Data Layer (current)
-- [ ] Download and parse MBTA GTFS files
-- [ ] Build `stations.json` (canonical station list with coords)
-- [ ] Write `fit_distributions.py` to extract headways, dwell times, travel times from GTFS
-- [ ] Produce all `data/distributions/*.json` files
-- [ ] Write `data/stations.json`
+### Phase 1: Data Layer ✅ COMPLETE
+- [x] Download and parse MBTA GTFS files
+- [x] Build `stations.json` — 70 physical stations, lat/lon, branches, surface flag, stop_ids
+- [x] Write `analysis/fit_distributions.py` — headways (24 series), travel times (146 segments)
+- [x] Produce all `data/distributions/*.json` files
+- [x] Write `data/stations.json`
 
-### Phase 2: SimPy Simulation Core
-- [ ] Implement `sim/network.py` — Green Line graph (start with D branch only)
-- [ ] Implement `sim/train.py` — Train process
-- [ ] Implement `sim/station.py` — Station + passenger queue
-- [ ] Implement `sim/passenger.py` — Poisson arrival process
-- [ ] Implement `sim/runner.py` — single-run + batch runner
-- [ ] Unit tests for all sim components
+### Phase 2: SimPy Simulation Core ✅ COMPLETE
+- [x] `sim/network.py` — Network graph: loads stations, routes, segment dists, headways, dwell params; exposes `sample_travel_time`, `sample_dwell`, `sample_headway`, `init_merge_points`
+- [x] `sim/station.py` — SimulatedStation: platform queue, boarding/alighting with dwell coupling (`dwell = base + 0.5s×board + 0.3s×alight`), per-station metrics
+- [x] `sim/passenger.py` — Poisson arrival process keyed to time block; `seed_initial_passengers` for warm-start
+- [x] `sim/train.py` — Train SimPy process: per-stop alight/board/dwell, segment travel, breakdown injection, merge Resource request; `train_dispatcher` spawns trains at headway intervals
+- [x] `sim/runner.py` — `single_run(SimConfig)` and `batch_run(SimConfig, n)` with event log, trip metrics, headway gap collection; CLI entry point
+- [ ] Unit tests for all sim components (Phase 3 prerequisite)
 
-### Phase 3: Analysis Layer
-- [ ] Implement `analysis/metrics.py` — delay, travel time, bunching stats
+**Verified smoke test (D branch, 120 min, weekday AM):**
+- 100 runs complete in ~3 seconds
+- Trip duration: mean ~100 min, p90 ~102 min, best ~91 min, worst ~110 min
+- Breakdowns: ~5/run, 99% of runs affected
+- Trains/run: ~30
+
+**Known issues to address in calibration pass (Phase 5):**
+- Trip duration ~100 min vs ~60 min scheduled — passenger arrival rates need scaling down for single-branch sim (rates are system-wide, not per-branch)
+- `total_overflow` in station metrics double-counts passengers who miss multiple consecutive trains; needs to become a per-unique-passenger metric
+
+### Phase 3: Analysis Layer (next)
+- [ ] Implement `analysis/metrics.py` — delay, travel time, bunching stats richer than runner summary
+- [ ] Unit tests for sim components (`tests/`)
 - [ ] Validate: p50 travel time should match MBTA schedule ± reasonable variance
-- [ ] Extend to full Green Line (add B, C, E branches + merge logic)
+- [ ] Extend to full Green Line (add B, C, E branches + merge Resource logic at Kenmore/Copley)
 
 ### Phase 4: Dash Dashboard
 - [ ] `dashboard/app.py` — app scaffold, layout router
 - [ ] `dashboard/batch_view.py` — batch I/O charts and stats
 - [ ] `dashboard/map_view.py` — single-run animated map
 
-### Phase 5: Polish
-- [ ] Special event injection (passenger surge)
+### Phase 5: Polish & Calibration
+- [ ] Calibration pass: scale passenger arrival rates for single-branch context; validate p50 trip time against GTFS schedule
+- [ ] Fix overflow metric to track unique stranded passengers
+- [ ] Special event injection (passenger surge via SimConfig)
 - [ ] Weather factor (surface segment variance multiplier)
-- [ ] GLX branches (Union Square, Medford/Tufts)
-- [ ] Calibration pass: compare sim outputs to published MBTA performance data
+- [ ] GLX branches (Union Square, Medford/Tufts — already in GTFS data)
 
 ---
 
@@ -243,11 +255,11 @@ pip install -r requirements.txt
 
 ### Running the Simulation (CLI)
 ```bash
-# Single run
-python -m sim.runner --mode single --origin "Park Street" --destination "Boston College" --time "08:00" --day monday
+# Single run — D branch inbound, weekday AM peak, 120 min window
+python -m sim.runner --mode single --branch Green-D --direction 1 --day weekday --start-time 07:00 --duration 120
 
-# Batch run
-python -m sim.runner --mode batch --runs 1000 --branch B --day monday --window 07:00-09:00
+# Batch run — 1000 simulations
+python -m sim.runner --mode batch --branch Green-D --direction 1 --day weekday --start-time 07:00 --duration 120 --runs 1000
 ```
 
 ### Running the Dashboard
@@ -276,6 +288,9 @@ Store as `MBTA_API_KEY` in a `.env` file at project root. Never commit `.env`.
 | GTFS for distribution fitting | Real data over estimates — dramatically increases simulation credibility |
 | Trunk as SimPy Resource | Models actual physical constraint: one train at a time through the shared underground section |
 | Lognormal for surface segments | Right-skewed: occasional very long delays from traffic, but a floor at minimum travel time |
+| Dwell time coupled to pax count | `dwell = base_sample + 0.5s×board + 0.3s×alight` captures bunching cascade: late train → more pax → longer dwell → later still |
+| Effective door rate 0.5s/pax | Type 8 LRV has 4 sets of double doors (8 streams); TCRP single-door rate of 2.5s / 8 ≈ 0.31s; 0.5s adds crowding margin |
+| Passengers modeled, not ignored | Without passenger coupling, simulation outputs delay distributions but not *why* delays compound — misses the core Green Line phenomenon |
 
 ---
 
