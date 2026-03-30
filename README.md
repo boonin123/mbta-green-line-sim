@@ -89,17 +89,6 @@ pytest tests/ -v   # 95 tests
 
 ---
 
-## Self-hosting (Render)
-
-The repo includes a [`render.yaml`](render.yaml) for one-click deployment on [Render](https://render.com):
-
-1. Fork this repo
-2. Go to [dashboard.render.com](https://dashboard.render.com) → **New → Blueprint**
-3. Connect your fork — Render picks up `render.yaml` automatically
-4. Deploy (free tier, ~512 MB RAM, sleeps after 15 min idle)
-
----
-
 ## Project structure
 
 ```
@@ -122,7 +111,7 @@ mbta-green-line-sim/
 │   ├── batch_view.py            # Batch I/O analysis
 │   └── map_view.py              # Animated single-run map
 ├── tests/                       # 95 pytest tests
-├── render.yaml                  # Render.com deployment config
+├── fly.toml                     # Fly.io deployment config
 └── requirements.txt
 ```
 
