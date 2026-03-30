@@ -65,6 +65,7 @@ def get_arrival_rate(
     arrivals_data: dict,
     day_type: str,
     time_block: str,
+    pax_scale: float = 1.0,
 ) -> float:
     """
     Return λ (passengers per minute) for a station at a given time.
@@ -75,6 +76,10 @@ def get_arrival_rate(
     arrivals_data : loaded passenger_arrivals.json dict
     day_type      : "weekday", "saturday", or "sunday"
     time_block    : one of the TIME_BLOCK labels
+    pax_scale     : multiplier applied to the raw rate. Use 1/n_branches when
+                    simulating a single branch — base rates are system-wide
+                    (all branches share each platform), so a D-branch-only run
+                    should use pax_scale=0.25 to avoid over-accumulation.
 
     Returns
     -------
@@ -88,10 +93,13 @@ def get_arrival_rate(
     tier = tiers.get(station_id, default_tier)
     base = base_rates[tier]
     mult = multipliers.get(day_type, multipliers["weekday"]).get(time_block, 1.0)
-    return base * mult
+    return base * mult * pax_scale
 
 
-def arrival_process(env, station, arrivals_data: dict, day_type: str, sim_end: float):
+def arrival_process(
+    env, station, arrivals_data: dict, day_type: str, sim_end: float,
+    pax_scale: float = 1.0,
+):
     """
     SimPy generator process: continuously generates passenger arrivals
     at `station` until sim_end.
@@ -106,11 +114,14 @@ def arrival_process(env, station, arrivals_data: dict, day_type: str, sim_end: f
     arrivals_data : loaded passenger_arrivals.json
     day_type      : "weekday", "saturday", or "sunday"
     sim_end       : simulation end time in seconds since midnight
+    pax_scale     : branch fraction scale factor (see get_arrival_rate)
     """
     while env.now < sim_end:
         # Re-evaluate rate at current simulation time (captures peak transitions)
         block = current_time_block(env.now)
-        rate_per_min = get_arrival_rate(station.id, arrivals_data, day_type, block)
+        rate_per_min = get_arrival_rate(
+            station.id, arrivals_data, day_type, block, pax_scale
+        )
 
         if rate_per_min <= 0:
             # No arrivals during this period — advance by 1 minute and recheck
@@ -127,26 +138,28 @@ def arrival_process(env, station, arrivals_data: dict, day_type: str, sim_end: f
             station.add_passenger(env.now)
 
 
-def seed_initial_passengers(station, arrivals_data: dict, day_type: str, sim_start: float):
+def seed_initial_passengers(
+    station, arrivals_data: dict, day_type: str, sim_start: float,
+    pax_scale: float = 1.0,
+):
     """
     Seed platforms with passengers who would have accumulated before the
     simulation window begins (avoids cold-start bias on first few trains).
 
-    Estimates passengers waiting = mean_arrival_rate × estimated_headway_wait.
-    Uses a simple heuristic: passengers waiting = λ × (headway / 2).
-
     Parameters
     ----------
-    station     : SimulatedStation
+    station       : SimulatedStation
     arrivals_data : loaded passenger_arrivals.json
-    day_type    : "weekday", "saturday", or "sunday"
-    sim_start   : simulation start time (seconds since midnight)
+    day_type      : "weekday", "saturday", or "sunday"
+    sim_start     : simulation start time (seconds since midnight)
+    pax_scale     : branch fraction scale factor (see get_arrival_rate)
     """
     block = current_time_block(sim_start)
-    rate_per_min = get_arrival_rate(station.id, arrivals_data, day_type, block)
+    rate_per_min = get_arrival_rate(
+        station.id, arrivals_data, day_type, block, pax_scale
+    )
 
     # Assume half a headway of accumulation before sim starts.
-    # Cap at 30 to avoid cold-start over-seeding swamping early trains.
     assumed_headway_min = 7.0
     expected_waiting = min(rate_per_min * (assumed_headway_min / 2.0), 30)
 

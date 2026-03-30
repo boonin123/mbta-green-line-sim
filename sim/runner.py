@@ -87,6 +87,13 @@ class SimConfig:
     seed        : random seed (None = non-deterministic)
     end_station_id : parent station ID to truncate route (e.g. "place-kencl").
                      None = run full branch to terminus.
+    pax_scale   : passenger arrival rate multiplier. Default (None) = auto-set
+                  to 1/n_branches, since base rates in passenger_arrivals.json
+                  are system-wide (all branches share each platform). A single-
+                  branch run should only attract its proportional share of pax.
+    breakdown_scale : multiplier on per-trip breakdown probability.
+                  Default 0.5 — the raw GTFS-derived rates were calibrated on
+                  systemwide data and over-fire for single-branch DES runs.
     """
     branches: list[str] = field(default_factory=lambda: ["Green-D"])
     directions: list[int] = field(default_factory=lambda: [1])
@@ -95,6 +102,19 @@ class SimConfig:
     duration_min: float = 120.0
     seed: int | None = None
     end_station_id: str | None = None
+    pax_scale: float | None = None        # None = auto (1 / n_branches)
+    breakdown_scale: float = 0.5          # halved from raw estimates
+
+    # Total Green Line branches that share each platform (B, C, D, E)
+    _TOTAL_GL_BRANCHES: int = 4
+
+    @property
+    def effective_pax_scale(self) -> float:
+        if self.pax_scale is not None:
+            return self.pax_scale
+        # Base rates in passenger_arrivals.json are system-wide — all 4 branches
+        # share each platform. Scale proportionally to how many we're simulating.
+        return len(self.branches) / self._TOTAL_GL_BRANCHES
 
     @property
     def start_seconds(self) -> float:
@@ -252,14 +272,20 @@ def single_run(config: SimConfig) -> RunResult:
 
     stations = _build_simulated_stations(network, arrivals_data)
 
+    pax_scale = config.effective_pax_scale
+
     # Seed platforms with pre-existing passengers (warm-start)
     for station in stations.values():
-        seed_initial_passengers(station, arrivals_data, config.day_type, config.start_seconds)
+        seed_initial_passengers(
+            station, arrivals_data, config.day_type, config.start_seconds, pax_scale
+        )
 
     # Start passenger arrival processes at every station
     for station in stations.values():
         env.process(
-            arrival_process(env, station, arrivals_data, config.day_type, config.end_seconds)
+            arrival_process(
+                env, station, arrivals_data, config.day_type, config.end_seconds, pax_scale
+            )
         )
 
     # Track all spawned trains via a shared list
@@ -298,6 +324,7 @@ def single_run(config: SimConfig) -> RunResult:
                 breakdown_rates=breakdown_rates,
                 day_type=config.day_type,
                 route_override=route if config.end_station_id else None,
+                breakdown_scale=config.breakdown_scale,
             )
             all_trains.append(train)
             env.process(train.run(env))
@@ -366,6 +393,8 @@ def batch_run(config: SimConfig, n_runs: int, verbose: bool = True) -> BatchResu
             duration_min=config.duration_min,
             seed=config.seed + i if config.seed is not None else None,
             end_station_id=config.end_station_id,
+            pax_scale=config.pax_scale,
+            breakdown_scale=config.breakdown_scale,
         )
         result = single_run(run_config)
         summaries.append(result.summary())
@@ -426,6 +455,10 @@ if __name__ == "__main__":
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--end-station", default=None,
                         help="Parent station ID to stop at (e.g. place-kencl for Kenmore)")
+    parser.add_argument("--pax-scale", type=float, default=None,
+                        help="Passenger arrival scale (default: 1/n_branches auto)")
+    parser.add_argument("--breakdown-scale", type=float, default=0.5,
+                        help="Breakdown probability multiplier (default: 0.5)")
     args = parser.parse_args()
 
     cfg = SimConfig(
@@ -436,6 +469,8 @@ if __name__ == "__main__":
         duration_min=args.duration,
         seed=args.seed,
         end_station_id=args.end_station,
+        pax_scale=args.pax_scale,
+        breakdown_scale=args.breakdown_scale,
     )
 
     if args.mode == "single":

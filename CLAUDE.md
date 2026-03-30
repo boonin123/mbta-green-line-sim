@@ -214,20 +214,29 @@ Output:
 - [x] `sim/runner.py` — `single_run(SimConfig)` and `batch_run(SimConfig, n)` with event log, trip metrics, headway gap collection; CLI entry point
 - [ ] Unit tests for all sim components (Phase 3 prerequisite)
 
-**Verified smoke test (D branch, 120 min, weekday AM):**
-- 100 runs complete in ~3 seconds
-- Trip duration: mean ~100 min, p90 ~102 min, best ~91 min, worst ~110 min
-- Breakdowns: ~5/run, 99% of runs affected
-- Trains/run: ~30
+**Calibrated results (D branch inbound, 200 runs each):**
 
-**Known issues to address in calibration pass (Phase 5):**
-- Trip duration ~100 min vs ~60 min scheduled — passenger arrival rates need scaling down for single-branch sim (rates are system-wide, not per-branch)
-- `total_overflow` in station metrics double-counts passengers who miss multiple consecutive trains; needs to become a per-unique-passenger metric
+| Scenario | p50 | p90 | Worst | Breakdowns/run |
+|----------|-----|-----|-------|---------------|
+| Weekday midday (11:00) | 72.4 min | 75.7 min | 94.4 min | 3.2 |
+| Weekday AM peak (07:00) | 78.0 min | 81.1 min | 91.7 min | 3.1 |
+| Weekday PM peak (16:30) | 79.0 min | 81.6 min | 90.4 min | 2.9 |
+
+Google Maps shows ~68 min for full D branch → sim p50 adds ~4-10 min of realistic delay above schedule. Baseline (zero pax, zero breakdown) = 69.5 min, within 1.5 min of scheduled.
+
+**Calibration decisions (documented for future reference):**
+1. **`pax_scale = len(branches) / 4`** — base rates in `passenger_arrivals.json` are system-wide (all 4 GL branches share each platform). Single-branch sim uses 1/4 of arrivals.
+2. **`breakdown_scale = 0.5`** — raw per-trip breakdown probabilities overfit to systemwide outage data; halved gives ~3 breakdowns/run at realistic delay magnitudes.
+3. **Dwell times recalibrated to excess-only** — GTFS `arrival_time == departure_time` for all GL stops; our fitted segment travel times already include scheduled dwell. `dwell_times.json` now represents only excess dwell beyond schedule (door mechanics ~5s underground, ~8s surface) so at zero passengers, sim p50 ≈ GTFS schedule.
+4. **`end_station_id`** — supports partial route runs (e.g. Riverside→Kenmore). Use `place-kencl`, `place-pktrm`, etc.
+
+**Known remaining issue:**
+- `total_overflow` in station metrics double-counts passengers who miss multiple consecutive trains (a passenger stranded across N trains appears N times). Tracked for Phase 3 fix.
 
 ### Phase 3: Analysis Layer (next)
 - [ ] Implement `analysis/metrics.py` — delay, travel time, bunching stats richer than runner summary
 - [ ] Unit tests for sim components (`tests/`)
-- [ ] Validate: p50 travel time should match MBTA schedule ± reasonable variance
+- [ ] Fix overflow metric to track unique stranded passengers
 - [ ] Extend to full Green Line (add B, C, E branches + merge Resource logic at Kenmore/Copley)
 
 ### Phase 4: Dash Dashboard
@@ -235,9 +244,7 @@ Output:
 - [ ] `dashboard/batch_view.py` — batch I/O charts and stats
 - [ ] `dashboard/map_view.py` — single-run animated map
 
-### Phase 5: Polish & Calibration
-- [ ] Calibration pass: scale passenger arrival rates for single-branch context; validate p50 trip time against GTFS schedule
-- [ ] Fix overflow metric to track unique stranded passengers
+### Phase 5: Polish
 - [ ] Special event injection (passenger surge via SimConfig)
 - [ ] Weather factor (surface segment variance multiplier)
 - [ ] GLX branches (Union Square, Medford/Tufts — already in GTFS data)
@@ -291,6 +298,9 @@ Store as `MBTA_API_KEY` in a `.env` file at project root. Never commit `.env`.
 | Dwell time coupled to pax count | `dwell = base_sample + 0.5s×board + 0.3s×alight` captures bunching cascade: late train → more pax → longer dwell → later still |
 | Effective door rate 0.5s/pax | Type 8 LRV has 4 sets of double doors (8 streams); TCRP single-door rate of 2.5s / 8 ≈ 0.31s; 0.5s adds crowding margin |
 | Passengers modeled, not ignored | Without passenger coupling, simulation outputs delay distributions but not *why* delays compound — misses the core Green Line phenomenon |
+| Dwell = excess-only (GTFS double-count fix) | GTFS `arrival_time == departure_time` → fitted travel times already contain scheduled dwell; base dwell params now represent only door-mechanics overhead (~5s underground, ~8s surface) |
+| `pax_scale = n_sim_branches / 4` | Arrival rates in `passenger_arrivals.json` are platform-level (all branches); single-branch run gets its proportional share |
+| `breakdown_scale = 0.5` default | Raw per-trip rates calibrated to systemwide outage data; halved aligns sim breakdowns with expected per-branch frequency |
 
 ---
 

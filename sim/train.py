@@ -84,6 +84,7 @@ class Train:
         breakdown_rates: dict,
         day_type: str = "weekday",
         route_override: list[str] | None = None,
+        breakdown_scale: float = 1.0,
     ):
         self.train_id = train_id
         self.branch = branch
@@ -100,7 +101,7 @@ class Train:
 
         # Breakdown parameters for this branch
         br = breakdown_rates.get(branch, breakdown_rates.get("Green-D", {}))
-        self._breakdown_prob = br.get("prob_per_trip", 0.02)
+        self._breakdown_prob = br.get("prob_per_trip", 0.02) * breakdown_scale
         self._breakdown_mu = br.get("delay_mu", 5.0)
         self._breakdown_sigma = br.get("delay_sigma", 0.7)
 

@@ -1,23 +1,23 @@
 {
   "underground": {
     "dist": "lognormal",
-    "mu": 3.4,
-    "sigma": 0.4,
-    "mean": 31.8,
-    "p50": 30.0,
-    "p90": 49.1,
-    "source": "TCRP Report 165 / MBTA operational estimates",
-    "notes": "Underground stops (trunk, D branch, GLX tunnels). Consistent platform height improves boarding speed."
+    "mu": 1.6,
+    "sigma": 0.5,
+    "mean": 5.5,
+    "p50": 5.0,
+    "p90": 9.1,
+    "source": "Calibrated: excess-only dwell beyond GTFS scheduled segment times",
+    "notes": "MBTA Green Line GTFS records arrival_time == departure_time, so fitted segment travel times already include scheduled dwell (~30s). This value represents only the EXCESS dwell deviation beyond schedule: door-open/close mechanical time (~5s), plus variance for signal holds and door faults. Per-passenger boarding time adds on top via BOARD_TIME_PER_PAX."
   },
   "surface": {
     "dist": "lognormal",
-    "mu": 3.7,
-    "sigma": 0.55,
-    "mean": 44.0,
-    "p50": 40.4,
-    "p90": 74.2,
-    "source": "TCRP Report 165 / MBTA operational estimates",
-    "notes": "Surface/street-running stops (B, C, E branches). Higher variance from variable crowding, door issues, and cross-traffic at unsignalized stops."
+    "mu": 2.1,
+    "sigma": 0.65,
+    "mean": 9.9,
+    "p50": 8.2,
+    "p90": 19.5,
+    "source": "Calibrated: excess-only dwell beyond GTFS scheduled segment times",
+    "notes": "Surface stops (B, C, E branches) have higher excess variance than underground: unsignalized cross-traffic, variable door alignment, and pedestrian conflicts add unpredictable extra time beyond schedule. Higher sigma reflects this fat tail."
   },
   "peak_multiplier": {
     "am_peak": 1.4,
@@ -26,6 +26,6 @@
     "evening": 0.85,
     "late_night": 0.75,
     "early_morning": 0.75,
-    "notes": "Multiply base dwell sigma by this factor during peak hours to reflect crowding-induced boarding delays."
+    "notes": "Multiply base dwell by this factor during peak hours to reflect crowding-induced excess door holds."
   }
 }
