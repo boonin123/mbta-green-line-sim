@@ -8,9 +8,9 @@ The Green Line runs four branches (B, C, D, E) that merge into a shared undergro
 
 ## Live demo
 
-Hosted on Render: **[mbta-green-line-sim.onrender.com](https://mbta-green-line-sim.onrender.com)**
+**[mbta-green-line-sim-damp-pine-9794.fly.dev](https://mbta-green-line-sim-damp-pine-9794.fly.dev)**
 
-> Free tier — may take ~30 s to wake from sleep on first visit.
+> Free tier — may take ~20 s to wake from sleep on first visit.
 
 ---
 
