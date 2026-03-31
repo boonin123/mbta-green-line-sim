@@ -284,6 +284,7 @@ Google Maps shows ~68 min for full D branch → sim p50 adds ~4-10 min of realis
 - [ ] Special event injection (passenger surge via SimConfig)
 - [ ] Weather factor (surface segment variance multiplier)
 - [ ] Multi-train trips with transfer support
+- [ ] Mobile and tablet responsive layout — portrait/landscape orientation support for phones and iPads (touch-friendly controls, stacked layout on small screens, map resizing on orientation change)
 
 ---
 
