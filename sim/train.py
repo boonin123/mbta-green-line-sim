@@ -142,6 +142,7 @@ class Train:
                 time_block=time_block,
                 sim_time=env.now,
                 is_terminus=is_terminus,
+                direction=self.direction,
             )
 
             self.passengers = (

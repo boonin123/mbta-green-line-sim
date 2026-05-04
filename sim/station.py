@@ -16,9 +16,11 @@ When a train arrives, the station transfers passengers to the train:
 
 Alighting model
 ---------------
-A fixed fraction of on-board passengers alight at each stop. The fraction
-is higher at major hubs and near the terminus, lower on outer branch stops.
-Default: ALIGHT_FRACTION = 0.18 (roughly 1-in-5 passengers exit each stop).
+A direction-aware fraction of on-board passengers alight at each stop:
+  - Inbound (terminus → downtown): outer stops see mostly boardings; low fractions.
+    Fractions rise at trunk/hub stops where commuters reach their destination.
+  - Outbound (downtown → terminus): passengers disembark at neighbourhood stops;
+    branch fractions are significantly higher so trains shed load faster.
 At the final stop in a route, all remaining passengers alight.
 
 Dwell time coupling
@@ -40,14 +42,27 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from sim.network import Network, StationRecord
 
-# Fraction of on-board passengers that alight at each non-terminus stop.
-# Varies by station tier (major hubs see more exits).
+# Fraction of on-board passengers that alight at each non-terminus stop,
+# keyed by direction (1=inbound, 0=outbound) then station tier.
+#
+# Inbound fractions match calibrated values; outbound branch fractions are
+# higher because passengers disembark at neighbourhood stops rather than
+# riding all the way downtown.
 ALIGHT_FRACTIONS = {
-    "major_hub": 0.28,
-    "trunk": 0.20,
-    "branch_main": 0.15,
-    "branch_outer": 0.10,
-    "terminus": 1.00,  # everyone exits at end of line
+    1: {  # inbound (terminus → downtown): preserve calibrated behaviour
+        "major_hub": 0.28,
+        "trunk": 0.20,
+        "branch_main": 0.15,
+        "branch_outer": 0.10,
+        "terminus": 1.00,
+    },
+    0: {  # outbound (downtown → terminus): higher branch fractions shed load faster
+        "major_hub": 0.28,
+        "trunk": 0.20,
+        "branch_main": 0.22,
+        "branch_outer": 0.18,
+        "terminus": 1.00,
+    },
 }
 DEFAULT_ALIGHT_FRACTION = 0.18
 
@@ -122,6 +137,7 @@ class SimulatedStation:
         time_block: str,
         sim_time: float,
         is_terminus: bool = False,
+        direction: int = 1,
     ) -> BoardingResult:
         """
         Process one train stop: alighting, boarding, dwell time calculation.
@@ -134,6 +150,7 @@ class SimulatedStation:
         time_block   : current time block label (for dwell sampling)
         sim_time     : current simulation time (seconds since midnight)
         is_terminus  : True if this is the last stop on this train's route
+        direction    : 1=inbound (terminus→downtown), 0=outbound (downtown→terminus)
 
         Returns
         -------
@@ -143,7 +160,8 @@ class SimulatedStation:
         if is_terminus:
             alighted = passengers_on_board
         else:
-            frac = ALIGHT_FRACTIONS.get(self.tier, DEFAULT_ALIGHT_FRACTION)
+            fracs = ALIGHT_FRACTIONS.get(direction, ALIGHT_FRACTIONS[1])
+            frac = fracs.get(self.tier, DEFAULT_ALIGHT_FRACTION)
             # Add small randomness: ±20% of fraction
             frac = max(0.0, frac * random.uniform(0.8, 1.2))
             alighted = int(round(passengers_on_board * frac))
