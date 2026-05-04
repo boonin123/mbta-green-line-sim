@@ -50,6 +50,17 @@ SCHEDULED_TRIP_SEC: dict[str, float] = {
     "Green-E": 3000,   # ~50 min (Heath Street → Lechmere)
 }
 
+# Real-world on-time performance benchmarks by branch and day type.
+# Source: MBTA OPMI Performance Dashboard, FY2024 weekday/weekend averages.
+# Metric: % of trips arriving within 5 min of the published schedule.
+# Values are approximate — check mbta.com/performance for the latest figures.
+MBTA_OTP_REFERENCE: dict[str, dict[str, float]] = {
+    "Green-B": {"weekday": 73.0, "saturday": 76.0, "sunday": 76.0},
+    "Green-C": {"weekday": 76.0, "saturday": 79.0, "sunday": 79.0},
+    "Green-D": {"weekday": 83.0, "saturday": 86.0, "sunday": 86.0},
+    "Green-E": {"weekday": 77.0, "saturday": 80.0, "sunday": 80.0},
+}
+
 # Bunching threshold: two consecutive trains are "bunched" when the gap
 # between them is less than BUNCH_THRESHOLD × mean headway at that point.
 BUNCH_THRESHOLD = 0.5

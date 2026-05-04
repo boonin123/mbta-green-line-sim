@@ -25,6 +25,8 @@ from dash import Input, Output, State, dcc, html, no_update
 from analysis.metrics import (
     batch_summary_table,
     station_stats,
+    MBTA_OTP_REFERENCE,
+    SCHEDULED_TRIP_SEC,
 )
 from sim.runner import BatchResult, SimConfig, batch_run, single_run
 # Re-use route helpers from map_view
@@ -433,15 +435,17 @@ def register_callbacks(app):
         td = agg["trip_duration"]
         bk = agg["breakdowns"]
 
-        def _card(title, value, color="primary"):
+        def _card(title, value, color="primary", subtitle=None):
             return dbc.Col(
                 dbc.Card([
                     dbc.CardBody([
                         html.P(title, className="card-text text-muted small mb-1"),
                         html.H4(value, className=f"text-{color} mb-0"),
+                        html.P(subtitle, className="text-muted mb-0",
+                               style={"fontSize": "0.7rem"}) if subtitle else None,
                     ])
                 ], className="h-100"),
-                width=3,
+                width=2,
             )
 
         mean_min = f"{td['mean_of_means_sec']/60:.1f} min" if td.get("mean_of_means_sec") else "—"
@@ -449,11 +453,21 @@ def register_callbacks(app):
         worst_min = f"{td['worst_trip_sec']/60:.1f} min"   if td.get("worst_trip_sec")    else "—"
         bd_per_run = f"{bk['mean_per_run']:.1f}"
 
+        # MBTA real-world OTP benchmark (published data, not derived from sim)
+        mbta_otp = _mbta_otp_for_config(branches, batch.config.day_type)
+        if mbta_otp is not None:
+            otp_value = f"{mbta_otp:.0f}%"
+            otp_subtitle = "Departure adherence (MBTA FY2024)"
+        else:
+            otp_value = "—"
+            otp_subtitle = None
+
         cards = [
             _card("Mean trip time (p50 of means)", mean_min, "primary"),
             _card("p90 trip time", p90_min, "warning"),
             _card("Worst single trip", worst_min, "danger"),
             _card("Breakdowns / run", bd_per_run, "secondary"),
+            _card("MBTA on-time (real-world)", otp_value, "info", otp_subtitle),
         ]
 
         # Trip duration histogram
@@ -494,10 +508,18 @@ def register_callbacks(app):
                           annotation_text="Schedule", annotation_position="top right")
         cdf_fig.add_vline(x=5, line_dash="dot", line_color="#f97316",
                           annotation_text="5 min late", annotation_position="top right")
+        if mbta_otp is not None:
+            cdf_fig.add_hline(
+                y=mbta_otp,
+                line_dash="dot", line_color="#dc2626", line_width=1.5,
+                annotation_text=f"MBTA published OTP: {mbta_otp:.0f}%",
+                annotation_position="right",
+                annotation_font_color="#dc2626",
+            )
         cdf_fig.update_layout(
-            title="Delay vs schedule — cumulative",
+            title="Delay vs schedule — cumulative (MBTA benchmark = departure adherence, not end-to-end delay)",
             xaxis_title="Delay (min, + = late)", yaxis_title="% of runs",
-            margin=dict(t=50, b=40, l=40, r=20), height=320,
+            margin=dict(t=60, b=40, l=40, r=80), height=320,
         )
 
         # Bunching chart
@@ -597,6 +619,19 @@ def _run_single_for_station_stats(cfg: SimConfig):
         seed=42,
     )
     return single_run(single_cfg)
+
+
+def _mbta_otp_for_config(branches: list[str], day_type: str) -> float | None:
+    """Return the average MBTA OTP benchmark % for a branch list + day type."""
+    day_key = "weekday" if day_type == "weekday" else "saturday"
+    vals = [
+        MBTA_OTP_REFERENCE[b][day_key]
+        for b in branches
+        if b in MBTA_OTP_REFERENCE
+    ]
+    if not vals:
+        return None
+    return sum(vals) / len(vals)
 
 
 def _batch_route_badge(origin_id: str | None, dest_id: str | None) -> html.Div:

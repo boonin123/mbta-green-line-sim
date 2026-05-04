@@ -49,6 +49,15 @@ from sim.train import Train, load_breakdown_rates
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
 
+# Scheduled full-branch trip durations (seconds) — mirrors analysis/metrics.py.
+# Used to compute per-run on-time % without importing from the analysis package.
+_SCHEDULED_TRIP_SEC: dict[str, float] = {
+    "Green-B": 4080,
+    "Green-C": 3300,
+    "Green-D": 4080,
+    "Green-E": 3000,
+}
+
 # Station tier lookup — loaded once from passenger_arrivals.json
 _ARRIVALS_DATA: dict | None = None
 
@@ -147,6 +156,11 @@ class RunResult:
 
     def summary(self) -> dict:
         td = self.trip_durations
+        sched_sec = statistics.mean(
+            _SCHEDULED_TRIP_SEC.get(b, 4080) for b in self.config.branches
+        )
+        on_time = sum(1 for d in td if (d - sched_sec) <= 300)
+        pct_on_time = round(on_time / len(td) * 100, 1) if td else None
         return {
             "n_trains": len(self.trains),
             "trip_duration_mean_sec": statistics.mean(td) if td else None,
@@ -161,6 +175,7 @@ class RunResult:
             "total_stranded": sum(
                 m["total_stranded"] for m in self.station_metrics
             ),
+            "pct_on_time": pct_on_time,
         }
 
 
@@ -182,6 +197,7 @@ class BatchResult:
         td_mins = _collect("trip_duration_min_sec")
         breakdowns = _collect("total_breakdowns")
         overflows = _collect("total_stranded")
+        otp_vals = _collect("pct_on_time")
 
         return {
             "n_runs": self.n_runs,
@@ -210,6 +226,8 @@ class BatchResult:
                 "max_per_run": max(overflows) if overflows else None,
                 "runs_with_overflow": sum(1 for o in overflows if o > 0),
             },
+            # On-time performance
+            "mean_pct_on_time": _safe_mean(otp_vals),
             "wall_time_sec": self.wall_time_sec,
         }
 

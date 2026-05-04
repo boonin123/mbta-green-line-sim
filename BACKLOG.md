@@ -55,7 +55,7 @@ Items are roughly prioritised: **P1** = high value / quick win, **P2** = meaning
 |-----|------|-------|
 | ~~P1~~ | ~~**Landing page / "Ride the Train" intro screen**~~ | ✅ Done — `landing_view.py`: animated train hero, real GL schematic, stats bar, feature cards. |
 | ~~P1~~ | ~~**End-of-ride stats pop-up card**~~ | ✅ Done — modal shows your time vs p50/p90, percentile rank, breakdown count, crowding; 30 background batch runs. |
-| P1 | **Loading state / progress indicator** | Batch runs block the main thread. Show a spinner and disable the button while running. For large runs (500+), consider a progress bar updated via a polling interval. |
+| ~~P1~~ | ~~**Loading state / progress indicator**~~ | ✅ Done — batch runs execute in a background thread; `dcc.Interval` polls at 300ms; animated progress bar with run count label; button disabled during run and re-enabled on completion. |
 | P2 | **Multi-train trips** | Let user pick an origin and destination that require a transfer (e.g. B branch → trunk → E branch). Detect when direct route doesn't exist; propose the best transfer station; simulate both legs and show combined travel time and transfer wait. |
 | P2 | **Batch scenario comparison** | Run two configs side-by-side (e.g. "weekday AM peak" vs "weekday PM peak") and overlay their distribution plots. Useful for "what if headways improved?" analysis. |
 | P2 | **Dark mode** | Bootstrap `data-bs-theme="dark"` toggle; Plotly `template="plotly_dark"`. |
@@ -85,7 +85,7 @@ Items are roughly prioritised: **P1** = high value / quick win, **P2** = meaning
 
 | Pri | Item | Notes |
 |-----|------|-------|
-| P1 | **Real-world benchmark comparison** | MBTA publishes monthly on-time performance by route. Add a reference line or table to the batch view showing actual GL on-time % vs sim output for the same conditions. |
+| ~~P1~~ | ~~**Real-world benchmark comparison**~~ | ✅ Done — `MBTA_OTP_REFERENCE` added to `metrics.py` (FY2024 weekday/weekend OTP % by branch). Batch view gains a 5th summary card showing MBTA's published on-time % for the selected branch/day type, plus a reference line on the delay CDF chart. Labeled as departure-adherence data (not directly comparable to end-to-end sim delay). |
 | P2 | **"What if" headway scenarios** | Parameterised headway override (e.g. "reduce peak headway from 7 min to 5 min") — run batch and compare against baseline. Directly answers the "would more trains help?" question. |
 | P2 | **Worst-case scenario finder** | Batch run across all combinations of time period × day type × weather, identify which combination produces the highest p99 trip time. |
 | P2 | **Station dwell pressure over time** | For a single run, plot `waiting_passengers` at each station as a heatmap over simulation time — shows where and when platforms are overwhelmed. |
