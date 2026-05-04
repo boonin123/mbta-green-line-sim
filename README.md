@@ -7,7 +7,10 @@ The Green Line runs four branches (B, C, D, E) that merge into a shared undergro
 ---
 
 ## Live demo
-**https://mbta-green-line-sim.onrender.com/**
+
+**[mbta-green-line-sim.onrender.com](https://mbta-green-line-sim.onrender.com)**
+
+> Free tier — may take ~30 s to wake from sleep on first visit.
 ---
 
 ## Screenshots
@@ -107,7 +110,7 @@ mbta-green-line-sim/
 │   ├── batch_view.py            # Batch I/O analysis
 │   └── map_view.py              # Animated single-run map
 ├── tests/                       # 95 pytest tests
-├── fly.toml                     # Fly.io deployment config
+├── render.yaml                  # Render.com deployment config
 └── requirements.txt
 ```
 

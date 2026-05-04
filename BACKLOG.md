@@ -23,8 +23,8 @@
 ### Phase 1 — Data Layer ✅ (2026-02)
 - 70 stations in `data/stations.json`; GTFS-fitted distributions for headways, travel times, dwell, passenger arrivals, breakdown rates
 
-### Phase 6 — Hosting & Documentation ✅ (2026-03)
-- `render.yaml` — one-click Render.com deployment; `gunicorn` added to `requirements.txt`
+### Phase 6 — Hosting & Documentation ✅ (2026-03 / 2026-05)
+- `render.yaml` — Render.com deployment (Python native runtime, gunicorn on `$PORT`); migrated from Fly.io May 2026
 - `README.md` — full rewrite with live demo link, 6 screenshot embeds, setup/CLI/hosting docs, project structure table
 - `docs/screenshots/` — automated Playwright screenshots: landing, batch (empty + results), map (empty + mid-animation + end modal)
 - `docs/take_screenshots.py` — headless Chromium screenshot script for future re-capture

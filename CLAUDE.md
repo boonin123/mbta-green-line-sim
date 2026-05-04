@@ -275,7 +275,7 @@ Google Maps shows ~68 min for full D branch → sim p50 adds ~4-10 min of realis
 - [x] Smooth animation — interpolated "moving" frames at 33%/67% between stops
 
 ### Phase 6: Hosting & Documentation ✅ COMPLETE
-- [x] `render.yaml` — Render.com deployment config; `gunicorn` added to `requirements.txt`
+- [x] `render.yaml` — Render.com deployment config (Python native runtime, gunicorn on `$PORT`); `gunicorn` added to `requirements.txt`
 - [x] `README.md` — full rewrite with live demo link, 6 screenshot embeds, setup/CLI/hosting docs
 - [x] `docs/screenshots/` — automated Playwright screenshots (landing, batch ×2, map ×3)
 - [x] `docs/take_screenshots.py` — headless screenshot script for future re-capture
@@ -310,6 +310,11 @@ python -m sim.runner --mode batch --branch Green-D --direction 1 --day weekday -
 python dashboard/app.py
 # Opens at http://localhost:8050
 ```
+
+### Deployment (Render.com)
+Deployed at https://mbta-green-line-sim.onrender.com via `render.yaml`.
+Push to `main` → Render auto-deploys (no GitHub Action needed).
+Free tier sleeps after 15 min idle; cold start ~30 s.
 
 ### Running Tests
 ```bash
